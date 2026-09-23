@@ -1,0 +1,15 @@
+[package]
+name = "seed"
+description = "Curated entrypoint for Seed: a thin, sans-I/O decision core you compose."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["sans-io", "state-machine"]
+categories = ["rust-patterns"]
+publish = true
+
+[dependencies]
+seed-contract.workspace = true

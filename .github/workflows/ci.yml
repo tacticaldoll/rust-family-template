@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  skeleton:
+    name: Skeleton ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: [brick, app]
+    defaults:
+      run:
+        working-directory: skeleton/${{ matrix.profile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Definition of Done
+        run: |
+          cargo build --workspace
+          cargo test --workspace
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo fmt --all --check
+          RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
+          cargo run -p seed-governance -- check --manifest-path Cargo.toml
+          ./scripts/changelog-guard.sh
+          cargo +1.88 build --workspace
+      - name: supply chain
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          manifest-path: skeleton/${{ matrix.profile }}/Cargo.toml
+          command: check
+
+  instantiate:
+    name: Instantiate ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: [brick, app]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: stamp out a repository
+        run: scripts/instantiate.sh ${{ matrix.profile }} probe "$RUNNER_TEMP/probe"
+      - name: the instantiation conforms to its profile
+        run: scripts/family-check.py ${{ matrix.profile }} probe "$RUNNER_TEMP/probe"
+      - name: the instantiation passes its own Definition of Done
+        working-directory: ${{ runner.temp }}/probe
+        run: |
+          cargo build --workspace
+          cargo test --workspace
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo fmt --all --check
+          RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
+          cargo run -p probe-governance -- check --manifest-path Cargo.toml
+          ./scripts/changelog-guard.sh
+          cargo +1.88 build --workspace
+      - name: family-check reports planted drift
+        run: |
+          sed -i 's/^- Converse with users in the language they use.$/- Converse freely./' "$RUNNER_TEMP/probe/AGENTS.md"
+          if scripts/family-check.py ${{ matrix.profile }} probe "$RUNNER_TEMP/probe"; then
+            echo "family-check accepted a changed shared section" >&2
+            exit 1
+          fi
