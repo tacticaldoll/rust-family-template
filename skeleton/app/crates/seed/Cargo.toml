@@ -1,0 +1,14 @@
+[package]
+name = "seed"
+description = "Seed: an application that composes sans-I/O bricks behind a thin I/O shell."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["cli"]
+categories = ["command-line-utilities"]
+publish = true
+
+[dependencies]
