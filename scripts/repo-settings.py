@@ -7,7 +7,8 @@ The required status checks are the display names of every job in the checkout's
 .github/workflows/ci.yml (a `${{ matrix.<key> }}` in a name expands over that job's matrix list).
 Every other value is the family standard stated in FAMILY.md, "Repository Settings". Without
 `--apply` this only reads GitHub (`gh api`); with it, it writes the repository and `main`
-protection settings. Exit 0 when the repository matches, 1 on drift, 2 on a usage or API error.
+protection settings. It also reports GitHub Release objects, which `--apply` never removes.
+Exit 0 when the repository matches, 1 on drift, 2 on a usage or API error.
 """
 
 from __future__ import annotations
@@ -101,6 +102,16 @@ def drift(repo: str, checks: list[str]) -> list[str]:
     for key, value in REPOSITORY.items():
         if settings.get(key) != value:
             found.append(f"repository {key} is {settings.get(key)!r}, want {value!r}")
+    releases: list[dict] = []
+    for page in range(1, 100):
+        batch = gh(f"repos/{repo}/releases?per_page=100&page={page}") or []
+        releases += batch
+        if len(batch) < 100:
+            break
+    if releases:
+        tags = ", ".join(sorted(r["tag_name"] for r in releases))
+        found.append(f"has {len(releases)} GitHub Release object(s) ({tags}); the family keeps "
+                      "release notes in CHANGELOG.md only, so remove them by hand")
     current = gh(f"repos/{repo}/branches/main/protection")
     if current is None:
         return found + ["main is not protected"]
