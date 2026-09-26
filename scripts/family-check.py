@@ -91,6 +91,10 @@ GOVERNANCE_TESTS = [
     "law_projection_is_fresh",
 ]
 
+# The OpenSpec CLI is pinned: validators disagree across releases (1.4.1 rejected a requirement
+# whose SHALL sat past its first line; 1.13.2 accepts it), so every repository runs the same one.
+OPENSPEC_GATE = "npx -y @fission-ai/openspec@1.13.2 validate --all --strict --no-interactive"
+
 CI_JOBS = {
     "dod": "Definition of Done",
     "msrv": "MSRV (1.88)",
@@ -395,6 +399,8 @@ def check_governance(name: str, repo: Path, skeleton: Path, report: Report) -> N
         report.add(".github/workflows/ci.yml", f"governance job does not run `{name}-governance check`")
     if "./scripts/changelog-guard.sh" not in "".join(jobs.values()):
         report.add(".github/workflows/ci.yml", "no job runs ./scripts/changelog-guard.sh")
+    if OPENSPEC_GATE not in "".join(jobs.values()):
+        report.add(".github/workflows/ci.yml", f"no job runs `{OPENSPEC_GATE}`")
 
 
 def check_headings(repo: Path, report: Report) -> None:

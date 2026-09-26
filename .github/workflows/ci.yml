@@ -29,6 +29,7 @@ jobs:
           RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
           cargo run -p seed-governance -- check --manifest-path Cargo.toml
           ./scripts/changelog-guard.sh
+          npx -y @fission-ai/openspec@1.13.2 validate --all --strict --no-interactive
           cargo +1.88 build --workspace
       - name: supply chain
         uses: EmbarkStudios/cargo-deny-action@v2
@@ -62,6 +63,7 @@ jobs:
           RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
           cargo run -p probe-governance -- check --manifest-path Cargo.toml
           ./scripts/changelog-guard.sh
+          npx -y @fission-ai/openspec@1.13.2 validate --all --strict --no-interactive
           cargo +1.88 build --workspace
       - name: family-check reports planted drift
         run: |
