@@ -6,7 +6,7 @@ mandatory phases; each records its disposition and reason.
 ## Current Baseline
 
 - Workspace instantiated from the family template's app skeleton: `seed` and
-  `seed-governance` on Tianheng 0.6.1.
+  `seed-governance` on Tianheng 0.7.0.
 
 ## Open Design Questions
 

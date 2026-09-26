@@ -18,7 +18,7 @@ governance and builds, tests, and governs itself with no reference back here.
 - [`scripts/instantiate.sh`](scripts/instantiate.sh) — stamp out a new repository from a profile.
 - [`scripts/family-check.py`](scripts/family-check.py) — check a repository against a profile.
 
-Both skeletons are real workspaces on [Tianheng](https://github.com/tacticaldoll/tianheng) 0.6.1
+Both skeletons are real workspaces on [Tianheng](https://github.com/tacticaldoll/tianheng) 0.7.0
 and pass their own Definition of Done. `seed` is a placeholder product name that the skeletons use
 for nothing else.
 

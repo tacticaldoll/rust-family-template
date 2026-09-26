@@ -4,9 +4,9 @@ version = 4
 
 [[package]]
 name = "guibiao"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b6c5517be1df15b3e23435a214d6af0f97fe88c24d88c56b75a67ab66644d91"
+checksum = "3c1f515d32f8cebc6a1a8f85db020f10d3c5d51864619b6f03d0f4ad8509d62d"
 dependencies = [
  "serde_json",
  "xingbiao",
@@ -15,9 +15,9 @@ dependencies = [
 
 [[package]]
 name = "hunyi"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9facf0ae09ea02c98e9c7273e24514793a9e8ea7ab7bb919bbbc01c7837b07b"
+checksum = "4eee07b5eda2fd6231b8d42bf822660f62edcb096363689af7a2d7277cf3b376"
 dependencies = [
  "serde_json",
  "syn 2.0.119",
@@ -33,9 +33,9 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "louke"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8154cbd3871f425a250c5ccb787a884ad5feb63d3b12e157a73c8162aa05d328"
+checksum = "4d70f8a75d3def1dbd58d5ea0d4d18c145330a38e0b4d101996efc526aedec02"
 dependencies = [
  "xingbiao",
  "xuanji",
@@ -149,9 +149,9 @@ dependencies = [
 
 [[package]]
 name = "tianheng"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "431c168639ce8dc662c2fff035cdee716d0a544fba7f7f3800ca3860340abbc2"
+checksum = "432aadc1799105de87a1b6ff75ab500a5c285d495cffdad16ab9cbc0800018ed"
 dependencies = [
  "guibiao",
  "hunyi",
@@ -167,18 +167,18 @@ checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
 
 [[package]]
 name = "xingbiao"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1540a15113f498ef7d3fedb5e1ca14aa2c4633b0302b24b55cafa2b88a54c79"
+checksum = "9e00e3d65d1880ad46558cf9f615ab1c9e2dc826953da26f38e7cb536665e20d"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "xuanji"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f8d98ff15faecd503fa07ab8d3a631904eb4cf13aca09818de56c73e6a5b4d0"
+checksum = "8b944b66ff421f0f77d758b11722fe874e5acb49b0660c388408012d90e441bf"
 dependencies = [
  "serde_json",
 ]
