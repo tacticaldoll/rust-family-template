@@ -32,8 +32,15 @@ workspace, and shares its architecture: a pure core behind a re-export facade, h
 skeleton's law. An application shares only the style in `style/app/`: the shared `AGENTS.md`
 sections and prefixes, the base Definition of Done, CI jobs, whole-file copies, changelog, tags,
 repository settings, and how its law is hosted and projected. What it composes, how it is laid
-out, and what its constitution holds are its own. `scripts/profile-check.py` keeps what both
-profiles share identical between the two references.
+out, and what its constitution holds are its own. It is born from `style/app/` overlaid with
+`kit/app/`, the thinnest workspace that passes its own gates: an empty library, a governance crate
+holding only the gate-independence law, and a `PROJECT.md` whose intent is left to write.
+`scripts/profile-check.py` keeps what both profiles share identical between the references,
+including how the kit hosts law.
+
+Opening a repository is how an intent is recorded. A repository born from either profile passes
+its gates at birth with its `openspec/specs/` empty; it grows its contract through OpenSpec
+changes. A born repository neither references nor depends on this template afterwards.
 
 ## AGENTS.md
 
@@ -127,12 +134,14 @@ The choices that shaped this governance, with their reasons.
 - **No GitHub Release objects.** `CHANGELOG.md` is the single set of release notes, and its footer
   links resolve to the tag page without a Release. A Release would be a second copy that drifts;
   one repository once carried three, so `repo-settings.py` reports any.
-- **Only bricks are stamped out.** Bricks share one architecture, so a skeleton gives each new one
-  a working, governed start. Applications do not: the one application in the family composes three
-  bricks through seams, spawns processes, and has no pure core, while the former app skeleton
-  prescribed a functional core and an effectful shell. A skeleton for applications would either
-  impose one architecture on all of them or teach a shape none of them has, so an application
-  adopts the style and owns the rest.
+- **Bricks get a skeleton; applications get a birth kit.** Bricks share one architecture, so a
+  skeleton gives each new one a working, governed start. Applications do not: the one application
+  in the family composes three bricks through seams, spawns processes, and has no pure core, while
+  the former app skeleton prescribed a functional core and an effectful shell. A skeleton for
+  applications would either impose one architecture on all of them or teach a shape none of them
+  has. The kit carries no architecture and only the law every gate needs to host law (the
+  application never depends on its gate; the gate depends on Tianheng alone), which the coverage
+  test requires of every crate.
 - **Disposition Discipline is adopted, not imposed.** It rules out consumer-gated deferral, which
   is product policy; a brick that grows bet-first or behind a consumer graduation test would be
   contradicted by it. The skeleton offers it to new bricks; an existing brick adopts it through
@@ -145,6 +154,7 @@ The choices that shaped this governance, with their reasons.
 
 The template follows the governance it defines: branch from `main`, open a pull request,
 squash-merge with a self-describing body, no attribution. A change to shared text lands here first —
-with the brick skeleton passing its Definition of Done, instantiating cleanly, and passing
-`family-check.py`, and with `profile-check.py` confirming the application style still matches it —
-and is then carried to each repository in its own pull request.
+with the brick skeleton passing its Definition of Done, both profiles instantiating into
+repositories that pass `family-check.py` and their own Definition of Done, and `profile-check.py`
+confirming the references still match — and is then carried to each repository in its own pull
+request.
