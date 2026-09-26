@@ -65,11 +65,12 @@ jobs:
           ./scripts/changelog-guard.sh
           npx -y @fission-ai/openspec@1.13.2 validate --all --strict --no-interactive
           cargo +1.88 build --workspace
-      - name: the instantiation passes supply-chain policy
-        uses: EmbarkStudios/cargo-deny-action@v2
+      - uses: taiki-e/install-action@v2
         with:
-          manifest-path: ${{ runner.temp }}/probe/Cargo.toml
-          command: check
+          tool: cargo-deny
+      - name: the instantiation passes supply-chain policy
+        working-directory: ${{ runner.temp }}/probe
+        run: cargo deny check
       - name: family-check reports planted drift
         run: |
           sed -i 's/^- Converse with users in the language they use.$/- Converse freely./' "$RUNNER_TEMP/probe/AGENTS.md"
