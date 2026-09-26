@@ -6,7 +6,8 @@ usage: family-check.py <brick|app> <name> <repo-dir>
 The skeleton's placeholder product `seed` / `Seed` is substituted with `<name>` / `<Name>` before
 comparison; the skeleton uses the placeholder for nothing else, so the substitution is plain.
 Every rule checked here is stated in FAMILY.md; this script is its mechanical projection. It reads
-the repository (and runs `cargo metadata --no-deps` in it) and never writes to it.
+the repository (runs `cargo metadata --no-deps` in it and lists its local git tags) and never
+writes to it.
 
 Exit 0 when the repository conforms, 1 on drift, 2 on a usage or internal error.
 """
@@ -109,6 +110,10 @@ WORKSPACE_PACKAGE = {
 }
 
 NAME = re.compile(r"^[a-z][a-z0-9]*$")
+
+# A release version as CHANGELOG.md headings and release tags spell it.
+VERSION = r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?"
+CHANGELOG_VERSION = re.compile(rf"^## \[({VERSION})\]", re.M)
 
 
 class Report:
@@ -272,10 +277,45 @@ def check_changelog(name: str, repo: Path, skeleton: Path, report: Report) -> No
         report.add("CHANGELOG.md", "preamble differs from the skeleton")
     if re.search(r"^## \[?unreleased\]?", actual, re.M | re.I):
         report.add("CHANGELOG.md", "carries an Unreleased section")
-    for version in re.findall(r"^## \[(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\]", actual, re.M):
+    for version in CHANGELOG_VERSION.findall(actual):
         link = rf"^\[{re.escape(version)}\]: https://github\.com/[^/ ]+/[^/ ]+/releases/tag/v{re.escape(version)}$"
         if not re.search(link, actual, re.M):
             report.add("CHANGELOG.md", f"version {version} has no footer link to releases/tag/v{version}")
+
+
+def check_tags(repo: Path, report: Report) -> None:
+    """Every tag is a release tag: `vX.Y.Z`, annotated, message exactly `release: X.Y.Z`, and a
+    CHANGELOG.md version.
+
+    Reads the checkout's local tags, so fetch them first (`git fetch --tags`). A released version
+    whose tag is not yet pushed is not reported: the release flow tags after the merge. A signed
+    tag is judged by its message; the signature is not part of it.
+    """
+    if not (repo / ".git").exists():
+        return
+    result = subprocess.run(
+        ["git", "-C", str(repo), "for-each-ref", "refs/tags",
+         "--format=%(refname:lstrip=2)%00%(objecttype)%00%(contents:subject)%00%(contents:body)%01"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        report.add("tags", f"cannot list tags: {result.stderr.strip()}")
+        return
+    versions = set(CHANGELOG_VERSION.findall(read(repo / "CHANGELOG.md") or ""))
+    for record in filter(None, (r.strip("\n") for r in result.stdout.split("\x01"))):
+        tag, kind, subject, body = record.split("\x00", 3)
+        match = re.fullmatch(rf"v({VERSION})", tag)
+        if not match:
+            report.add("tags", f"`{tag}` is not a release tag named vX.Y.Z")
+            continue
+        version = match.group(1)
+        if kind != "tag":
+            report.add("tags", f"`{tag}` is a lightweight tag; want an annotated tag")
+        elif subject != f"release: {version}" or body.strip():
+            message = "\n".join(filter(None, [subject, body.strip()]))
+            report.add("tags", f"`{tag}` message is {message!r}; want 'release: {version}'")
+        if version not in versions:
+            report.add("tags", f"`{tag}` has no CHANGELOG.md entry")
 
 
 def load_toml(path: Path, report: Report, where: str) -> dict | None:
@@ -424,6 +464,7 @@ def run(profile: str, name: str, repo: Path) -> int:
     check_exact(name, repo, skeleton, report)
     check_gitignore(name, repo, skeleton, report)
     check_changelog(name, repo, skeleton, report)
+    check_tags(repo, report)
     check_deny(repo, skeleton, report)
     check_workspace(profile, name, repo, report)
     check_governance(name, repo, skeleton, report)

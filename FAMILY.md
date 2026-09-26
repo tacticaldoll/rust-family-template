@@ -80,6 +80,7 @@ Every family repository, and this template, carries the same GitHub settings.
 | squash defaults | title from the pull request title, message from the pull request body |
 | head branches | deleted on merge |
 | `main` protection | pull request required (0 approvals); required status checks are every job in `.github/workflows/ci.yml`, with the branch up to date; enforced for administrators; linear history; no force pushes; no deletion |
+| GitHub Releases | none; `CHANGELOG.md` is the release notes (reported, never removed by `--apply`) |
 
 A job's display name is its required-check name, which is why the four family jobs share their
 names across the family and why a renamed job is a settings change.
@@ -110,7 +111,13 @@ The choices that shaped this governance, with their reasons.
   Each crate declares `publish = true` or `publish = false`, and the check refuses a crate that
   declares neither.
 - **Release tags keep `release: X.Y.Z`.** The squash subject is `chore(release): prepare X.Y.Z`
-  and the annotated tag message is `release: X.Y.Z`.
+  and the annotated tag message is `release: X.Y.Z`. Every tag is a release tag: named `vX.Y.Z`,
+  annotated with exactly that message (a signature may follow it), and naming a `CHANGELOG.md`
+  version. `family-check.py` reads the checkout's local tags and reports any other tag name, a
+  lightweight tag, another message, or a tag with no entry.
+- **No GitHub Release objects.** `CHANGELOG.md` is the single set of release notes, and its footer
+  links resolve to the tag page without a Release. A Release would be a second copy that drifts;
+  one repository once carried three, so `repo-settings.py` reports any.
 - **Disposition Discipline is adopted, not imposed.** It rules out consumer-gated deferral, which
   is product policy; a brick that grows bet-first or behind a consumer graduation test would be
   contradicted by it. The skeleton offers it to new bricks; an existing brick adopts it through
