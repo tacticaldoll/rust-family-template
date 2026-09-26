@@ -13,4 +13,4 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/tacticaldoll/seed"
 
 [workspace.dependencies]
-tianheng = "0.6.1"
+tianheng = "0.7.0"
