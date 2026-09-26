@@ -5,24 +5,14 @@ then let `openspec/specs/` and active change specs be the source of durable arch
 
 ## Seed In One Sentence
 
-Seed is an application: it composes sans-I/O bricks and owns the I/O, persistence, and wiring
-between them, behind a functional core that stays pure.
-
-This repository is intentionally a leaf. Seed is not a library brick and exposes no reusable
-mechanism of its own; the hard mechanics belong to the bricks it composes.
+<!-- repository-owned: what the application is, in one sentence, and what it composes. -->
 
 ## Architectural Axioms
 
 Before proposing or writing code, protect these axioms:
 
-1. **Compose, do not reimplement**: a mechanism a composed brick owns is used through that brick,
-   never rebuilt here.
-2. **Functional core, imperative shell**: `crate::domain` decides over explicit inputs with no
-   I/O and no ambient clock; `crate::shell` owns every effect and drives the core.
-3. **Effects stay at the edge**: filesystem, subprocess, network, and storage access live in the
-   shell, behind explicit inputs the core can be tested without.
-4. **Vocabulary is governance**: the names in `docs/domain-language.md` protect the application's
-   worldview; they are settled deliberately, never introduced piecemeal.
+<!-- repository-owned: the application's axioms. Its architecture is its own; the family
+     prescribes none for an application. -->
 
 ## Composition
 
@@ -31,7 +21,7 @@ Before proposing or writing code, protect these axioms:
                     │  inherited discipline — provenance, not coupling
                     ▼
              ●  seed  ── composes ──▶  the bricks named in PROJECT.md
-   note: skeleton from tacticaldoll/rust-family-template.
+   note: style from tacticaldoll/rust-family-template.
 ```
 
 Seed is a **consumer**, not a brick. Unlike a brick it names what it composes: which products
@@ -67,13 +57,7 @@ feature code.
 Every change passes an adversarial review at BOTH the propose and apply phases before it is
 committed. Actively challenge the design:
 
-- **Propose phase**: Does the change reimplement a composed brick's job instead of composing it?
-  Does it widen the application's authority beyond what its contract grants?
-- **Apply phase**: Does an effect leak into `crate::domain`? Does the change leak a secret or
-  escape the workspace boundary it operates in? Does Tianheng still bite the boundary that the
-  prose claims?
-
-Reject or redesign changes that turn Seed into a monolith of its bricks.
+<!-- repository-owned: the propose- and apply-phase questions for this application. -->
 
 ## Governance and Conformance
 
@@ -247,7 +231,4 @@ npx -y @fission-ai/openspec@1.13.2 validate --all --strict --no-interactive
 cargo +1.88 build --workspace
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same gates on push and pull request. Rust style lives in
-these checks: rustfmt formats, clippy denies warnings, rustdoc denies documentation warnings,
-cargo-deny owns resolved supply-chain policy, `seed-governance` owns Tianheng architecture
-boundaries, and the pinned OpenSpec CLI validates the specs and any active change.
+<!-- repository-owned: repository gates added after the base list, and what CI runs. -->

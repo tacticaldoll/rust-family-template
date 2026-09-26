@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        profile: [brick, app]
+        profile: [brick]
     defaults:
       run:
         working-directory: skeleton/${{ matrix.profile }}
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        profile: [brick, app]
+        profile: [brick]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.88
@@ -70,5 +70,19 @@ jobs:
           sed -i 's/^- Converse with users in the language they use.$/- Converse freely./' "$RUNNER_TEMP/probe/AGENTS.md"
           if scripts/family-check.py ${{ matrix.profile }} probe "$RUNNER_TEMP/probe"; then
             echo "family-check accepted a changed shared section" >&2
+            exit 1
+          fi
+
+  profiles:
+    name: Profiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: the brick skeleton and the application style share the family style
+        run: scripts/profile-check.py
+      - name: an application is not stamped out
+        run: |
+          if scripts/instantiate.sh app probe "$RUNNER_TEMP/app-probe"; then
+            echo "instantiate.sh stamped out an application" >&2
             exit 1
           fi

@@ -3,8 +3,10 @@
 
 usage: family-check.py <brick|app> <name> <repo-dir>
 
-The skeleton's placeholder product `seed` / `Seed` is substituted with `<name>` / `<Name>` before
-comparison; the skeleton uses the placeholder for nothing else, so the substitution is plain.
+A profile's reference is `skeleton/brick/` (a real workspace a brick is stamped from) or
+`style/app/` (the style an application shares; the family stamps no application). The
+reference's placeholder product `seed` / `Seed` is substituted with `<name>` / `<Name>` before
+comparison; the reference uses the placeholder for nothing else, so the substitution is plain.
 Every rule checked here is stated in FAMILY.md; this script is its mechanical projection. It reads
 the repository (runs `cargo metadata --no-deps` in it and lists its local git tags) and never
 writes to it.
@@ -24,7 +26,7 @@ from pathlib import Path
 
 TEMPLATE = Path(__file__).resolve().parent.parent
 
-# AGENTS.md sections that must match the skeleton, per profile.
+# AGENTS.md sections that must match the profile's reference, per profile.
 SHARED_SECTIONS = {
     "brick": [
         "Lineage",
@@ -140,10 +142,10 @@ def read(path: Path) -> str | None:
         return None
 
 
-def skeleton_text(skeleton: Path, relative: str, name: str) -> str:
-    text = read(skeleton / relative)
+def reference_text(reference: Path, relative: str, name: str) -> str:
+    text = read(reference / relative)
     if text is None:
-        raise RuntimeError(f"template skeleton is missing {relative}")
+        raise RuntimeError(f"template reference is missing {relative}")
     return substitute(text, name)
 
 
@@ -212,16 +214,16 @@ def extends(command: list[str], base: list[str]) -> bool:
     return not remaining
 
 
-def check_agents(profile: str, name: str, repo: Path, skeleton: Path, report: Report) -> None:
+def check_agents(profile: str, name: str, repo: Path, reference: Path, report: Report) -> None:
     actual = read(repo / "AGENTS.md")
     if actual is None:
         report.add("AGENTS.md", "missing")
         return
-    exp_pre, exp, _ = sections(skeleton_text(skeleton, "AGENTS.md", name))
+    exp_pre, exp, _ = sections(reference_text(reference, "AGENTS.md", name))
     act_pre, act, order = sections(actual)
 
     if trim(exp_pre) != trim(act_pre):
-        report.add("AGENTS.md", "preamble differs from the skeleton")
+        report.add("AGENTS.md", "preamble differs from the reference")
 
     if not order or order[0] != f"{title_of(name)} In One Sentence":
         report.add("AGENTS.md", f"first section must be `## {title_of(name)} In One Sentence`")
@@ -230,13 +232,13 @@ def check_agents(profile: str, name: str, repo: Path, skeleton: Path, report: Re
         if heading not in act:
             report.add("AGENTS.md", f"shared section `## {heading}` is missing")
         elif trim(act[heading]) != trim(exp[heading]):
-            report.add("AGENTS.md", f"shared section `## {heading}` differs from the skeleton")
+            report.add("AGENTS.md", f"shared section `## {heading}` differs from the reference")
 
     for heading in PREFIX_SECTIONS:
         if heading not in act:
             report.add("AGENTS.md", f"section `## {heading}` is missing")
         elif first_paragraph(act[heading]) != first_paragraph(exp[heading]):
-            report.add("AGENTS.md", f"section `## {heading}` must open with the skeleton's paragraph")
+            report.add("AGENTS.md", f"section `## {heading}` must open with the reference's paragraph")
 
     canonical = [h for h in AGENTS_ORDER if h in exp]
     present = [h for h in order if h in canonical]
@@ -250,31 +252,31 @@ def check_agents(profile: str, name: str, repo: Path, skeleton: Path, report: Re
                 report.add("AGENTS.md", f"Definition Of Done lacks base gate `{shlex.join(base)}`")
 
 
-def check_exact(name: str, repo: Path, skeleton: Path, report: Report) -> None:
+def check_exact(name: str, repo: Path, reference: Path, report: Report) -> None:
     for relative in EXACT_FILES:
         actual = read(repo / relative)
         if actual is None:
             report.add(relative, "missing")
-        elif actual != skeleton_text(skeleton, relative, name):
-            report.add(relative, "differs from the skeleton")
+        elif actual != reference_text(reference, relative, name):
+            report.add(relative, "differs from the reference")
 
 
-def check_gitignore(name: str, repo: Path, skeleton: Path, report: Report) -> None:
+def check_gitignore(name: str, repo: Path, reference: Path, report: Report) -> None:
     actual = read(repo / ".gitignore")
     if actual is None:
         report.add(".gitignore", "missing")
-    elif not actual.startswith(skeleton_text(skeleton, ".gitignore", name)):
-        report.add(".gitignore", "must open with the skeleton's entries; repository entries follow them")
+    elif not actual.startswith(reference_text(reference, ".gitignore", name)):
+        report.add(".gitignore", "must open with the reference's entries; repository entries follow them")
 
 
-def check_changelog(name: str, repo: Path, skeleton: Path, report: Report) -> None:
+def check_changelog(name: str, repo: Path, reference: Path, report: Report) -> None:
     actual = read(repo / "CHANGELOG.md")
     if actual is None:
         report.add("CHANGELOG.md", "missing")
         return
-    expected = skeleton_text(skeleton, "CHANGELOG.md", name)
+    expected = reference_text(reference, "CHANGELOG.md", name)
     if trim(re.split(r"^## ", actual, maxsplit=1, flags=re.M)[0]) != trim(expected):
-        report.add("CHANGELOG.md", "preamble differs from the skeleton")
+        report.add("CHANGELOG.md", "preamble differs from the reference")
     if re.search(r"^## \[?unreleased\]?", actual, re.M | re.I):
         report.add("CHANGELOG.md", "carries an Unreleased section")
     for version in CHANGELOG_VERSION.findall(actual):
@@ -330,17 +332,17 @@ def load_toml(path: Path, report: Report, where: str) -> dict | None:
         return None
 
 
-def check_deny(repo: Path, skeleton: Path, report: Report) -> None:
+def check_deny(repo: Path, reference: Path, report: Report) -> None:
     actual = load_toml(repo / "deny.toml", report, "deny.toml")
     if actual is None:
         return
-    expected = tomllib.loads(skeleton_text(skeleton, "deny.toml", "seed"))
+    expected = tomllib.loads(reference_text(reference, "deny.toml", "seed"))
     base = set(expected["licenses"].pop("allow"))
     allowed = actual.get("licenses", {}).pop("allow", [])
     if not base <= set(allowed):
         report.add("deny.toml", f"license allow-list must include the family base {sorted(base)}")
     if actual != expected:
-        report.add("deny.toml", "differs from the skeleton outside the license allow-list")
+        report.add("deny.toml", "differs from the reference outside the license allow-list")
 
 
 def cargo_metadata(repo: Path, report: Report) -> dict | None:
@@ -414,13 +416,13 @@ def job_blocks(ci: str) -> dict[str, str]:
     return {job: "\n".join(block) for job, block in blocks.items()}
 
 
-def check_governance(name: str, repo: Path, skeleton: Path, report: Report) -> None:
+def check_governance(name: str, repo: Path, reference: Path, report: Report) -> None:
     law = read(repo / f"AGENTS.{name}-law.md")
-    preamble = skeleton_text(skeleton, "AGENTS.seed-law.md", name).split("# Constitution:", 1)[0]
+    preamble = reference_text(reference, "AGENTS.seed-law.md", name).split("# Constitution:", 1)[0]
     if law is None:
         report.add(f"AGENTS.{name}-law.md", "missing")
     elif not law.startswith(preamble):
-        report.add(f"AGENTS.{name}-law.md", "does not open with the skeleton's generated preamble")
+        report.add(f"AGENTS.{name}-law.md", "does not open with the reference's generated preamble")
 
     source = "".join(
         read(path) or "" for path in sorted((repo / f"crates/{name}-governance").rglob("*.rs"))
@@ -457,17 +459,22 @@ def check_headings(repo: Path, report: Report) -> None:
             report.add(relative, "missing")
 
 
+# Where each profile's reference files live: a brick is stamped from a buildable skeleton; an
+# application shares only the style, because its architecture is its own.
+REFERENCE = {"brick": TEMPLATE / "skeleton" / "brick", "app": TEMPLATE / "style" / "app"}
+
+
 def run(profile: str, name: str, repo: Path) -> int:
-    skeleton = TEMPLATE / "skeleton" / profile
+    reference = REFERENCE[profile]
     report = Report()
-    check_agents(profile, name, repo, skeleton, report)
-    check_exact(name, repo, skeleton, report)
-    check_gitignore(name, repo, skeleton, report)
-    check_changelog(name, repo, skeleton, report)
+    check_agents(profile, name, repo, reference, report)
+    check_exact(name, repo, reference, report)
+    check_gitignore(name, repo, reference, report)
+    check_changelog(name, repo, reference, report)
     check_tags(repo, report)
-    check_deny(repo, skeleton, report)
+    check_deny(repo, reference, report)
     check_workspace(profile, name, repo, report)
-    check_governance(name, repo, skeleton, report)
+    check_governance(name, repo, reference, report)
     check_headings(repo, report)
 
     for line in report.drift:
