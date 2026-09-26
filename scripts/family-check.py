@@ -4,7 +4,7 @@
 usage: family-check.py <brick|app> <name> <repo-dir>
 
 A profile's reference is `skeleton/brick/` (a real workspace a brick is stamped from) or
-`style/app/` (the style an application shares; the family stamps no application). The
+`style/app/` (the style an application shares; it is born from that style plus `kit/app/`). The
 reference's placeholder product `seed` / `Seed` is substituted with `<name>` / `<Name>` before
 comparison; the reference uses the placeholder for nothing else, so the substitution is plain.
 Every rule checked here is stated in FAMILY.md; this script is its mechanical projection. It reads
@@ -460,7 +460,7 @@ def check_headings(repo: Path, report: Report) -> None:
 
 
 # Where each profile's reference files live: a brick is stamped from a buildable skeleton; an
-# application shares only the style, because its architecture is its own.
+# application is compared against its style only, because its architecture is its own.
 REFERENCE = {"brick": TEMPLATE / "skeleton" / "brick", "app": TEMPLATE / "style" / "app"}
 
 
