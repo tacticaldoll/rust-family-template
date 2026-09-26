@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
-# Instantiate a family template profile as a new family repository.
+# Instantiate the brick skeleton as a new family repository.
 #
-# usage: scripts/instantiate.sh <brick|app> <name> <dest-dir>
+# usage: scripts/instantiate.sh brick <name> <dest-dir>
 #
-# Copies skeleton/<profile> to <dest-dir> and renames the placeholder product `seed` / `Seed` to
+# Only a brick is stamped out. An application's architecture is its own, so the family shares
+# only its style (style/app/, checked by `family-check.py app`); see FAMILY.md, "Profiles".
+#
+# Copies skeleton/brick to <dest-dir> and renames the placeholder product `seed` / `Seed` to
 # <name> / <Name> in paths and file contents, including the lockfile, so the new workspace resolves
 # the same dependency versions the skeleton was verified with, then runs `cargo fmt --all`. The result is a standalone
 # workspace: it neither references nor depends on this template afterwards.
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 <brick|app> <name> <dest-dir>" >&2
+  echo "usage: $0 brick <name> <dest-dir>" >&2
   exit 2
 }
 
@@ -18,7 +21,11 @@ usage() {
 profile=$1
 name=$2
 dest=$3
-[ "$profile" = brick ] || [ "$profile" = app ] || usage
+if [ "$profile" = app ]; then
+  echo "instantiate: an application is not stamped out; adopt style/app/ (FAMILY.md, \"Profiles\")" >&2
+  exit 2
+fi
+[ "$profile" = brick ] || usage
 
 if ! printf '%s' "$name" | grep -qE '^[a-z][a-z0-9]*$'; then
   echo "instantiate: <name> must be lowercase ASCII letters and digits" >&2
