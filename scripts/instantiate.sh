@@ -81,6 +81,8 @@ done
 # Renaming changes line lengths, so the result is reformatted to stay rustfmt-clean.
 cargo fmt --all
 # Resolving once normalises the renamed lockfile, so the first build leaves the tree unchanged.
-cargo metadata --format-version 1 --offline >/dev/null
+# Offline first, from the local registry cache; a host without that cache resolves online.
+cargo metadata --format-version 1 --offline >/dev/null 2>&1 ||
+  cargo metadata --format-version 1 >/dev/null
 created=""
 echo "instantiate: created $profile repository '$name' in $dest"
