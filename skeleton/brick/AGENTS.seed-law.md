@@ -64,6 +64,15 @@ Regenerate it with `BLESS=1 cargo test -p seed-governance law_projection_is_fres
 - **rule**: inline symbol path confined to module (confined_prefix: std::process)
 - **kind**: module · **severity**: enforce · **crate**: seed-contract
 
+## Re-export-only boundaries
+
+### `seed::crate` (semantic)
+
+> the seed facade must stay a pure re-export entrypoint and hold no logic of its own
+
+- **rule**: must declare only re-exports
+- **kind**: semantic · **severity**: enforce · **crate**: seed
+
 ## Async-exposure boundaries
 
 ### `seed-contract::crate` (semantic)

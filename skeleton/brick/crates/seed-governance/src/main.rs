@@ -7,11 +7,7 @@
 
 #![forbid(unsafe_code)]
 
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    process::ExitCode,
-};
+use std::{env, process::ExitCode};
 
 use tianheng::prelude::*;
 
@@ -22,10 +18,6 @@ const CORE_PURITY_REASON: &str = "seed-contract makes no inline `std::time` `now
 const CORE_NO_IO_REASON: &str = "the sans-I/O core performs no I/O: no code in seed-contract may call into std::io/fs/net/process; I/O lives in a runtime outside the core. Coverage is partial by nature (macro-expanded I/O such as println! is invisible to a source scan), so this tooth complements review rather than replacing it.";
 const FACADE_REEXPORT_REASON: &str =
     "the seed facade must stay a pure re-export entrypoint and hold no logic of its own";
-const FACADE_NON_REEXPORT: &str = "non-re-export item in facade library";
-
-/// The facade source tree the re-exports-only scan guards, relative to the workspace root.
-const FACADE_SOURCE_DIR: &str = "crates/seed/src";
 
 fn constitution() -> Constitution {
     let constitution = Constitution::new("seed")
@@ -43,6 +35,12 @@ fn constitution() -> Constitution {
             CrateBoundary::crate_("seed")
                 .restrict_dependencies_to(["seed-contract"])
                 .because(FACADE_REASON),
+        )
+        .reexport_only_boundary(
+            ReexportOnlyBoundary::in_crate("seed")
+                .module("crate")
+                .must_declare_only_reexports()
+                .because(FACADE_REEXPORT_REASON),
         )
         .sans_io_pure(
             SansIoPure::in_crate("seed-contract")
@@ -64,147 +62,16 @@ fn constitution() -> Constitution {
 }
 
 fn main() -> ExitCode {
-    let args = env::args().collect::<Vec<_>>();
-
-    if args.iter().skip(1).any(|arg| arg == "check") {
-        let manifest = manifest_path_from_args(&args);
-        let root = manifest
-            .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| PathBuf::from("."));
-
-        if let Err(violations) = check_facade_reexports_only(&root) {
-            eprintln!("seed facade governance failed: {FACADE_REEXPORT_REASON}");
-            for violation in violations {
-                eprintln!(
-                    "{}:{}: `{}`",
-                    violation.path, violation.line, violation.marker
-                );
-            }
-            return ExitCode::from(1);
-        }
-    }
-
-    tianheng::run(&constitution(), args)
-}
-
-fn manifest_path_from_args(args: &[String]) -> PathBuf {
-    for index in 0..args.len() {
-        if args[index] == "--manifest-path"
-            && let Some(path) = args.get(index + 1)
-        {
-            return PathBuf::from(path);
-        }
-
-        if let Some(path) = args[index].strip_prefix("--manifest-path=") {
-            return PathBuf::from(path);
-        }
-    }
-
-    PathBuf::from("Cargo.toml")
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct SourceViolation {
-    path: String,
-    line: usize,
-    marker: &'static str,
-}
-
-fn check_facade_reexports_only(root: &Path) -> Result<(), Vec<SourceViolation>> {
-    let mut violations = Vec::new();
-    let files = collect_rs_files(&root.join(FACADE_SOURCE_DIR));
-
-    // An empty or missing facade tree is a vacuous pass; fail it instead.
-    if files.is_empty() {
-        violations.push(SourceViolation {
-            path: FACADE_SOURCE_DIR.to_owned(),
-            line: 0,
-            marker: "no facade source files found",
-        });
-    }
-
-    for file in files {
-        let relative = file
-            .strip_prefix(root)
-            .unwrap_or(&file)
-            .to_string_lossy()
-            .into_owned();
-        let Ok(content) = fs::read_to_string(&file) else {
-            violations.push(SourceViolation {
-                path: relative,
-                line: 0,
-                marker: "unreadable facade source",
-            });
-            continue;
-        };
-        violations.extend(check_facade_content(&relative, &content));
-    }
-
-    if violations.is_empty() {
-        Ok(())
-    } else {
-        Err(violations)
-    }
-}
-
-/// A brace-depth-aware line scan: at depth zero the facade may hold only re-exports, `use`
-/// imports, attributes, and comments. It is a line scan, not a parser, because this crate may
-/// depend only on `tianheng`; `cargo fmt --all --check` splits co-located items onto their own
-/// lines, where the scan then sees them.
-fn check_facade_content(path: &str, content: &str) -> Vec<SourceViolation> {
-    let mut violations = Vec::new();
-    let mut depth: i32 = 0;
-
-    for (index, line) in content.lines().enumerate() {
-        let trimmed = line.trim();
-        let is_comment = trimmed.starts_with("//");
-
-        if depth == 0
-            && !trimmed.is_empty()
-            && !is_comment
-            && !trimmed.starts_with('#')
-            && !trimmed.starts_with("pub use ")
-            && !trimmed.starts_with("use ")
-        {
-            violations.push(SourceViolation {
-                path: path.to_owned(),
-                line: index + 1,
-                marker: FACADE_NON_REEXPORT,
-            });
-        }
-
-        if !is_comment {
-            depth += line.matches('{').count() as i32;
-            depth -= line.matches('}').count() as i32;
-            depth = depth.max(0);
-        }
-    }
-
-    violations
-}
-
-fn collect_rs_files(dir: &Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-
-    let Ok(entries) = fs::read_dir(dir) else {
-        return files;
-    };
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.is_dir() {
-            files.extend(collect_rs_files(&path));
-        } else if path.extension().is_some_and(|extension| extension == "rs") {
-            files.push(path);
-        }
-    }
-
-    files
+    tianheng::run(&constitution(), env::args())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
+
     use super::*;
 
     const LAW_PROJECTION_PREAMBLE: &str = "\
@@ -239,11 +106,6 @@ Regenerate it with `BLESS=1 cargo test -p seed-governance law_projection_is_fres
         GovernanceTest::for_constitution(constitution())
             .with_manifest_dir(workspace_root())
             .assert_projection_fresh_with_preamble("AGENTS.seed-law.md", LAW_PROJECTION_PREAMBLE);
-    }
-
-    #[test]
-    fn current_facade_is_reexports_only() {
-        assert_eq!(check_facade_reexports_only(&workspace_root()), Ok(()));
     }
 
     #[test]
@@ -389,35 +251,62 @@ Regenerate it with `BLESS=1 cargo test -p seed-governance law_projection_is_fres
     }
 
     #[test]
-    fn facade_reexports_and_comments_are_allowed() {
-        let content = "//! Facade docs.\n#![no_std]\n\npub use seed_contract::{\n    Decision,\n    Verdict,\n};\n";
-        assert!(check_facade_content("lib.rs", content).is_empty());
-    }
-
-    #[test]
     fn facade_logic_item_is_rejected() {
-        assert_eq!(
-            check_facade_content("lib.rs", "pub fn helper() {}\n"),
-            vec![SourceViolation {
-                path: "lib.rs".to_owned(),
-                line: 1,
-                marker: FACADE_NON_REEXPORT,
-            }]
+        let workspace = TempWorkspace::new("seed-governance-facade-logic");
+        workspace.write_package("seed-contract", "", "pub struct Verdict;\n");
+        workspace.write_package(
+            "seed",
+            "[dependencies]\nseed-contract = { path = \"../seed-contract\" }\n",
+            "pub use seed_contract::Verdict;\n\npub fn helper() {}\n",
+        );
+
+        let report = workspace.violations(&["seed-contract"]);
+        assert!(
+            report.violations.iter().any(|violation| {
+                violation.rule == "must declare only re-exports" && violation.finding == "fn helper"
+            }),
+            "expected the facade re-export-only boundary to fire: {report:?}"
         );
     }
 
     #[test]
-    fn empty_facade_source_tree_fails_loudly() {
-        let workspace = TempWorkspace::new("seed-governance-empty-facade");
+    fn facade_child_module_is_rejected() {
+        let workspace = TempWorkspace::new("seed-governance-facade-module");
+        workspace.write_package("seed-contract", "", "pub struct Verdict;\n");
+        workspace.write_package(
+            "seed",
+            "[dependencies]\nseed-contract = { path = \"../seed-contract\" }\n",
+            "pub mod prelude {\n    pub use seed_contract::Verdict;\n}\n",
+        );
 
-        let Err(violations) = check_facade_reexports_only(&workspace.path) else {
-            panic!("a root with no facade source must fail the gate");
-        };
+        let report = workspace.violations(&["seed-contract"]);
         assert!(
-            violations
-                .iter()
-                .any(|violation| violation.marker == "no facade source files found"),
-            "expected a no-facade-source violation: {violations:?}"
+            report.violations.iter().any(|violation| {
+                violation.rule == "must declare only re-exports"
+                    && violation.finding.contains("prelude")
+            }),
+            "expected a facade child module to fire the re-export-only boundary: {report:?}"
+        );
+    }
+
+    #[test]
+    fn facade_reexports_stay_clean() {
+        let workspace = TempWorkspace::new("seed-governance-facade-clean");
+        workspace.write_package(
+            "seed-contract",
+            "",
+            "pub struct Decision;\npub struct Verdict;\n",
+        );
+        workspace.write_package(
+            "seed",
+            "[dependencies]\nseed-contract = { path = \"../seed-contract\" }\n",
+            "//! Facade docs.\n#![no_std]\n\nuse seed_contract::Decision;\npub use seed_contract::{Decision as Choice, Verdict};\n",
+        );
+
+        let outcome = workspace.outcome(&["seed-contract"]);
+        assert!(
+            matches!(outcome, Outcome::Clean(_)),
+            "a facade of re-exports must raise no violation: {outcome:?}"
         );
     }
 
