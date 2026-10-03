@@ -263,7 +263,9 @@ openspec instructions <artifact> --change "<change>"
 Run these from the workspace root before checking off implementation tasks or syncing specs. This
 is the single source for the gate list — `README.md` and `docs/development-flow.md` point here
 rather than restating it. If a command cannot run in the current environment, report that
-explicitly.
+explicitly. Builds and checks on a pinned toolchain other than the default are not in this list:
+a second toolchain is a second full build, so CI runs them, `main` accepts a pull request only once
+every CI check has passed, and a report of this list says those builds were left to CI.
 
 ```bash
 cargo build --workspace
@@ -275,10 +277,10 @@ cargo deny check
 cargo run -p seed-governance -- check --manifest-path Cargo.toml
 ./scripts/changelog-guard.sh
 npx -y @fission-ai/openspec@1.13.2 validate --all --strict --no-interactive
-cargo +1.88 build --workspace
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same gates on push and pull request. Rust style lives in
+CI (`.github/workflows/ci.yml`) runs the same gates on push and pull request, and its `msrv` job
+builds the workspace on the declared MSRV. Rust style lives in
 these checks: rustfmt formats, clippy denies warnings, rustdoc denies documentation warnings,
 cargo-deny owns resolved supply-chain policy, `seed-governance` owns Tianheng architecture
 boundaries, and the pinned OpenSpec CLI validates the specs and any active change.

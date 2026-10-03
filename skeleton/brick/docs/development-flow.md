@@ -43,4 +43,5 @@ Avoid:
 ## Definition Of Done
 
 `AGENTS.md` is the single source for the gate list — run its Definition of Done before checking
-off tasks or syncing specs. CI runs the same gates on push and pull request.
+off tasks or syncing specs. CI runs the same gates on push and pull request, together with the
+builds on a pinned toolchain that the list leaves to it.
