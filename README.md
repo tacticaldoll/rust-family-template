@@ -25,7 +25,7 @@ governance and builds, tests, and governs itself with no reference back here.
   references share the family style.
 
 The brick skeleton is a real workspace on [Tianheng](https://github.com/tacticaldoll/tianheng)
-0.7.0 and passes its own Definition of Done. `seed` is a placeholder product name that the
+0.8.0 and passes its own Definition of Done. `seed` is a placeholder product name that the
 references use for nothing else.
 
 ## Start a repository
