@@ -121,7 +121,12 @@ The choices that shaped this governance, with their reasons.
 - **The changelog is a ledger.** Unreleased work lives in OpenSpec, pull requests, and
   `BACKLOG.md`; a guard keeps every version heading linked.
 - **MSRV 1.88 for the workspace.** A repository may declare a lower floor for its published crates
-  as an extra gate.
+  as an extra CI gate.
+- **Pinned-toolchain builds run in CI only.** The Definition of Done holds no build or check on a
+  pinned toolchain other than the default: a second toolchain is a second full build of the
+  workspace, which on a workstation costs more than it catches, and `main` protection already
+  makes the `msrv` job, and any repository floor job, a required check. What compiles on the
+  default toolchain and not on the pinned one is red only in CI, which is where the merge waits.
 - **Every crate states whether it publishes.** Cargo inherits `publish` from `[workspace.package]`
   only through `publish.workspace = true`, so a workspace default protects nothing on its own.
   Each crate declares `publish = true` or `publish = false`, and the check refuses a crate that
